@@ -116,3 +116,49 @@ with tab4:
     m_sel = st.selectbox("どう動く？", ["待つ", "同僚に相談", "自分で直す", "放置"], key="m_s")
     st.session_state['m_t_val'] = st.text_area("戻った上司へ何と言いますか？", value=st.session_state['m_t_val'], key="m_t")
     text_responses["communication"] = f"判断:{m_sel} / 発言:{st.session_state['m_t_val']}"
+# ==========================================
+# 5. 評価ボタンと実行
+# ==========================================
+st.divider()
+
+# ボタンを表示
+if st.button("🚀 AI評価を開始", type="primary"):
+    if not st.session_state.get('name'):
+        st.error("左側のサイドバーで「氏名」を入力してください")
+    else:
+        with st.spinner("AI分析中..."):
+            try:
+                # 1. AI分析の実行
+                analyzer = TextAnalyzer()
+                text_scores = analyzer.analyze(text_responses)
+                
+                # 2. スコア計算
+                final_scores = SamhallScorer.calculate_final_scores(text_scores)
+                
+                # 3. ジョブデータベースの読み込み
+                with open('data/job_database.json', 'r', encoding='utf-8') as f:
+                    job_db = json.load(f)
+                
+                # 4. マッチング実行
+                job_matches = SamhallScorer.match_jobs(final_scores, job_db)
+                
+                # 結果をセッションに保存
+                st.session_state['scores'] = final_scores
+                st.session_state['job_matches'] = job_matches
+                st.session_state['evaluated'] = True
+                
+                # 画面をリロードして結果を表示させる
+                st.rerun()
+
+            except Exception as e:
+                st.error(f"エラーが発生しました: {e}")
+
+# 評価が終わっている場合に結果を表示する
+if st.session_state.get('evaluated'):
+    st.success("分析完了！")
+    
+    # スコア（レーダーチャート）の表示
+    st.plotly_chart(create_radar_chart(st.session_state['scores']))
+    
+    # ジョブマッチング（棒グラフ）の表示
+    st.plotly_chart(create_job_match_chart(st.session_state['job_matches'][:10]))
