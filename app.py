@@ -47,6 +47,8 @@ with st.sidebar:
     st.header("📝 基本情報")
     name = st.text_input("氏名", value="")
     age = st.number_input("年齢", min_value=15, max_value=100, value=25)
+    gender = st.selectbox("性別", ["男性", "女性", "その他"])
+    disability_type = st.text_input("障害種別", value="", placeholder="例：精神障害、知的障害など")
     
     st.divider()
     
@@ -65,6 +67,11 @@ with st.sidebar:
         key="phys_lift"
     )
 
+    env_preference = st.multiselect(
+        "避けるべき環境（配慮事項）",
+        ["騒音", "人混み", "高所", "屋外（暑さ・寒さ）", "強い光", "刃物・危険物"],
+        key="env_pref"
+    )
 # ==========================================
 # 4. ワーク回答セクション
 # ==========================================
