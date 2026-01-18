@@ -52,7 +52,7 @@ st.markdown("""
 # ==========================================
 # 3. サイドバー（基本情報入力）
 # ==========================================
-with st.sidebar:
+with  st.sidebar:
     st.header("📝 基本情報")
     name = st.text_input("氏名", value="")
     age = st.number_input("年齢", min_value=15, max_value=100, value=25)
@@ -60,31 +60,24 @@ with st.sidebar:
     st.divider()
     
     st.header("🏃 身体的・環境条件")
-    st.caption("仕事環境のマッチングに使用します")
+    st.caption("マッチングの精度を高めるために使用します")
     
-    # 身体的な制限や希望をチェック
     physical_mobility = st.selectbox(
-        "移動・歩行", 
-        ["制限なし", "長距離は困難", "車椅子利用", "杖・歩行器利用"]
+        "移動・歩行の状況", 
+        ["制限なし（階段・長距離OK）", "長距離は困難", "車椅子利用", "歩行補助が必要"],
+        key="phys_mob"
     )
     
     physical_lifting = st.selectbox(
-        "重いものの持ち運び", 
-        ["10kg以上OK", "5kg程度まで", "重いものは不可"]
-    )
-    
-    env_preference = st.multiselect(
-        "避けるべき環境（あれば）",
-        ["騒音", "人混み", "高所", "屋外（暑さ・寒さ）", "強い光"]
+        "持ち上げられる重さ", 
+        ["10kg以上（重労働OK）", "5kg程度（軽作業）", "重いものは不可"],
+        key="phys_lift"
     )
 
-    # 判定用にデータをまとめる
-    physical_data = {
-        "mobility": physical_mobility,
-        "lifting": physical_lifting,
-        "avoid_env": env_preference
-    }
 
+    # AIへ送るデータに身体情報も混ぜる
+    text_responses["calculation"] = f"【計算回答】:{c_txt} (自己評価:{c_sel})"
+    text_responses["physical_info"] = f"【身体条件】移動:{physical_mobility} / 重量物:{physical_lifting}"
 # ==========================================
 # 4. ワーク回答セクション（選択肢＋記述のハイブリッド）
 # ==========================================
@@ -118,8 +111,23 @@ with tab2:
     text_responses["writing"] = f"自己評価:{w_sel} / 回答:{w_txt}"
 
 with tab3:
-    st.subheader("計算・論理力")
-    st.write("【課題】1,200円の商品を買い、2,000円出しました。お釣りはいくらですか？")
-    c_sel = st.radio("計算に自信はありますか？", ["迷わず計算できた", "少し時間がかかった", "計算機がほしい", "わからなかった"], key="c_s")
-    c_txt = st.text_area("答えと、もし分かれば計算式を書いてください。", placeholder="例：800円。2000-1200=800", key="c_t")
-    text_responses["calculation"] = f"自己評価:{c_sel} / 回答:{c_txt}"
+    st.subheader("🔢 計算・論理力")
+    st.info("【実務課題：給与の計算】")
+    st.write("""
+    **課題：**
+    時給1,200円で、1日6時間、週に5日間働きました。
+    この働き方で4週間（合計20日間）働いた場合、給与の合計はいくらになりますか？
+    """)
+    
+    c_sel = st.radio(
+        "計算に自信はありますか？", 
+        ["迷わず計算できた", "少し時間がかかった", "計算機がほしい", "難しかった"], 
+        key="c_s_new"
+    )
+    
+    c_txt = st.text_area(
+        "答えと、その答えを出した計算の順序を書いてください。", 
+        placeholder="例：〇〇円。計算式：時給 × 時間 × 日数 = 〇〇", 
+        key="c_t_new"
+    )
+    
