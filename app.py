@@ -67,11 +67,25 @@ with st.sidebar:
         key="phys_lift"
     )
 
+    # 配慮事項の選択
+    env_options = ["騒音", "人混み", "高所", "屋外（暑さ・寒さ）", "強い光", "刃物・危険物", "その他"]
     env_preference = st.multiselect(
         "避けるべき環境（配慮事項）",
-        ["騒音", "人混み", "高所", "屋外（暑さ・寒さ）", "強い光", "刃物・危険物"],
+        options=env_options,
         key="env_pref"
     )
+
+    # 「その他」が選ばれた場合のみ、入力欄を表示
+    other_env_text = ""
+    if "その他" in env_preference:
+        other_env_text = st.text_input("具体的な配慮事項を入力してください", placeholder="例：特有の匂い、電話応対など")
+
+# --- AIへ送るデータのまとめ（コードの中盤・ボタンの前あたり） ---
+env_list = [item for item in env_preference if item != "その他"]
+if other_env_text:
+    env_list.append(other_env_text)
+
+text_responses["environment_info"] = f"【避けるべき環境】:{', '.join(env_list) if env_list else '特になし'}"
 # ==========================================
 # 4. ワーク回答セクション
 # ==========================================
