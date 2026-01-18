@@ -138,17 +138,21 @@ if st.button("🚀 AI評価を開始", type="primary"):
     else:
         with st.spinner("AI評価中...（10〜30秒かかります）"):
             try:
+                # 1. AI分析の実行
                 analyzer = TextAnalyzer()
                 text_scores = analyzer.analyze(text_responses)
                 
+                # 2. 最終スコアの計算
                 final_scores = SamhallScorer.calculate_final_scores(text_scores)
                 
-            
-with open('utils/job_database.json', 'r', encoding='utf-8') as f:
-    job_db = json.load(f)
+                # 3. ジョブデータベースの読み込み（インデントを合わせました）
+                with open('utils/job_database.json', 'r', encoding='utf-8') as f:
+                    job_db = json.load(f)
                 
+                # 4. マッチング実行
                 job_matches = SamhallScorer.match_jobs(final_scores, job_db)
                 
+                # 5. セッションへの保存
                 st.session_state['scores'] = final_scores
                 st.session_state['job_matches'] = job_matches
                 st.session_state['evaluated'] = True
@@ -157,7 +161,6 @@ with open('utils/job_database.json', 'r', encoding='utf-8') as f:
                 
             except Exception as e:
                 st.error(f"評価中にエラーが発生しました: {e}")
-
 if 'evaluated' in st.session_state and st.session_state['evaluated']:
     st.header("📊 評価結果")
     
