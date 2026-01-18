@@ -125,6 +125,11 @@ with tab3:
 
 with tab4:
     st.subheader("💬 報告・相談")
-    st.write("作業中に道具を壊してしまいましたが、周りに上司がいません。")
+    st.write("""
+    **場面：**
+    作業中に道具を壊してしまいましたが、周りに上司がいません。
+    """)
     m_sel = st.selectbox("どう動く？", ["待つ", "同僚に相談", "自分で直す", "放置"], key="m_s")
-    st.session_state['m_t_val'] = st.text_area("戻った上司へ何と言いますか？", value=st.session_state['m_t_val'], key
+    # ここが修正箇所です：最後に ')' が必要です
+    st.session_state['m_t_val'] = st.text_area("戻った上司へ何と言いますか？", value=st.session_state['m_t_val'], key="m_t")
+    text_responses["communication"] = f"判断:{m_sel} / 発言:{st.session_state['m_t_val']}"
