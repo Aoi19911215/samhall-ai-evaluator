@@ -87,4 +87,5 @@ with tab3:
     st.subheader("計算・論理力")
     st.write("【課題】1,200円の商品を買い、2,000円出しました。お釣りはいくらですか？")
     c_sel = st.radio("計算に自信はありますか？", ["迷わず計算できた", "少し時間がかかった", "計算機がほしい", "わからなかった"], key="c_s")
-    c_txt = st.text_area("答えと、もし分かれば計算式を書いてください。", placeholder="例：800
+    c_txt = st.text_area("答えと、もし分かれば計算式を書いてください。", placeholder="例：800円。2000-1200=800", key="c_t")
+    text_responses["calculation"] = f"自己評価:{c_sel} / 回答:{c_txt}"
