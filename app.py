@@ -8,37 +8,30 @@ from evaluator.text_analyzer import TextAnalyzer
 from evaluator.scorer import SamhallScorer
 
 # ==========================================
-# 1. グラフ作成・保存機能
+# 1. グラフ作成・保存機能（中身はそのまま）
 # ==========================================
 def create_radar_chart(scores):
     categories = list(scores.keys())
     values = list(scores.values())
     fig = go.Figure()
     fig.add_trace(go.Scatterpolar(r=values, theta=categories, fill='toself', name='スキル評価'))
-    fig.update_layout(
-        polar=dict(radialaxis=dict(visible=True, range=[0, 2])),
-        showlegend=False
-    )
+    fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 2])), showlegend=False)
     return fig
 
 def create_job_match_chart(job_matches):
     df = pd.DataFrame(job_matches)
-    fig = px.bar(df, x='match_rate', y='job_name', orientation='h',
-                 title="職種マッチング率",
-                 labels={'match_rate': 'マッチング率 (%)', 'job_name': '職種'})
+    fig = px.bar(df, x='match_rate', y='job_name', orientation='h', title="職種マッチング率")
     fig.update_layout(yaxis={'categoryorder':'total ascending'})
     return fig
 
 # ==========================================
-# 2. 初期設定・説明文
+# 2. 初期設定・辞書の準備（★重要：最初に作る）
 # ==========================================
 st.set_page_config(page_title="O-lys AI評価システム", layout="wide")
 st.title("🎯 O-lys AI評価システム（24職種対応）")
 
-st.markdown("""
-### 📌 本システムについて
-本アプリは、労働能力評価メソッド**「O-lys（オーリス）」**の指標に基づき、個人の「できること」を可視化するシミュレーターです。
-""")
+# ここで先に辞書を初期化します。これで以下のどこで使ってもエラーになりません。
+text_responses = {}
 
 # ==========================================
 # 3. サイドバー（基本情報入力）
@@ -53,8 +46,6 @@ with st.sidebar:
     st.divider()
     
     st.header("🏃 身体的・環境条件")
-    st.caption("マッチングの精度を高めるために使用します")
-    
     physical_mobility = st.selectbox(
         "移動・歩行の状況", 
         ["制限なし（階段・長距離OK）", "長距離は困難", "車椅子利用", "歩行補助が必要"],
@@ -67,33 +58,27 @@ with st.sidebar:
         key="phys_lift"
     )
 
-    # 配慮事項の選択
     env_options = ["騒音", "人混み", "高所", "屋外（暑さ・寒さ）", "強い光", "刃物・危険物", "その他"]
-    env_preference = st.multiselect(
-        "避けるべき環境（配慮事項）",
-        options=env_options,
-        key="env_pref"
-    )
+    env_preference = st.multiselect("避けるべき環境（配慮事項）", options=env_options, key="env_pref")
 
-    # 「その他」が選ばれた場合のみ、入力欄を表示
     other_env_text = ""
     if "その他" in env_preference:
-        other_env_text = st.text_input("具体的な配慮事項を入力してください", placeholder="例：特有の匂い、電話応対など")
+        other_env_text = st.text_input("具体的な配慮事項を入力してください")
 
-# --- AIへ送るデータのまとめ（コードの中盤・ボタンの前あたり） ---
+# --- データの整理（サイドバー情報を辞書へ格納） ---
 env_list = [item for item in env_preference if item != "その他"]
 if other_env_text:
     env_list.append(other_env_text)
 
+text_responses["user_profile"] = f"【基本】{age}歳/{gender} 【障害】:{disability_type}"
 text_responses["environment_info"] = f"【避けるべき環境】:{', '.join(env_list) if env_list else '特になし'}"
+text_responses["physical_info"] = f"【身体】移動:{physical_mobility} / 重量物:{physical_lifting}"
+
 # ==========================================
 # 4. ワーク回答セクション
 # ==========================================
 st.header("✍️ テキスト課題")
 tab1, tab2, tab3, tab4 = st.tabs(["📖 読解・理解", "✏️ 文章作成", "🔢 計算・論理", "💬 報告・相談"])
-
-# ここで辞書を初期化
-text_responses = {}
 
 with tab1:
     st.subheader("読解・理解力")
@@ -121,9 +106,6 @@ with tab4:
     m_sel = st.selectbox("どう動く？", ["待つ", "同僚に相談", "自分で直す", "放置"], key="m_s")
     m_txt = st.text_area("戻った上司へ何と言いますか？", key="m_t")
     text_responses["communication"] = f"判断:{m_sel} / 発言:{m_txt}"
-
-# 全ての入力が終わった後で身体情報を追加する（重要！）
-text_responses["physical_info"] = f"【身体条件】移動:{physical_mobility} / 重量物:{physical_lifting}"
 
 # ==========================================
 # 5. 評価ボタンと実行
