@@ -3,16 +3,24 @@ import math
 class SamhallScorer:
     @staticmethod
     def calculate_final_scores(text_scores):
-        # AI分析のスコアをそのまま使用（0.0〜2.0の範囲を想定）
-        return text_scores
+        # text_scoresが辞書であることを確認し、スコア部分のみを抽出
+        if isinstance(text_scores, dict):
+            return text_scores
+        return {}
 
     @staticmethod
     def match_jobs(user_scores, job_db):
         matches = []
         
+        # 安全策：user_scores が辞書でない場合は空リストを返す
+        if not isinstance(user_scores, dict):
+            return []
+
         for job in job_db:
-            # 1. スキルマッチング（距離計算方式）
-            # 各項目の「理想値」とのズレを計算します
+            # job が辞書形式であることを確認
+            if not isinstance(job, dict):
+                continue
+                
             total_diff = 0
             reqs = job.get('requirements', {})
             
@@ -20,38 +28,49 @@ class SamhallScorer:
             skills = ['reading', 'writing', 'calculation', 'communication']
             
             for skill in skills:
-                user_val = user_scores.get(skill, 0)
-                req_val = reqs.get(skill, 1.0) # 職種ごとの要求値（未設定なら1.0）
+                # user_scores[skill] が辞書や文字列の場合に備え、安全に数値化
+                val = user_scores.get(skill, 0)
+                try:
+                    user_val = float(val) if isinstance(val, (int, float, str)) else 0
+                except (ValueError, TypeError):
+                    user_val = 0
                 
-                # 要求値に足りない場合は大きく減点、超えている場合は少し加点
+                req_val = float(reqs.get(skill, 1.0))
+                
+                # --- 精度向上のための計算ロジック ---
                 if user_val < req_val:
-                    total_diff += (req_val - user_val) * 1.5 # 不足分は厳しく
+                    # スキルが足りない場合は厳しく減点（差の1.5倍）
+                    total_diff += (req_val - user_val) * 1.5
                 else:
-                    total_diff += (user_val - req_val) * 0.2 # 超過分はプラス要素としてわずかに反映
+                    # スキルが余裕で足りている場合は、微量の加点（ピッタリ度を出すため）
+                    total_diff += (user_val - req_val) * 0.1
 
-            # ベースのマッチ率計算（100点からズレを引く）
-            # 係数を調整することで、パーセントの広がりを制御できます
-            match_rate = 100 - (total_diff * 12)
+            # ベースマッチ率（係数を12→15に上げると、より数値がバラけます）
+            match_rate = 100 - (total_diff * 15)
             
-            # 2. 身体・環境条件による「足切り係数」（重要！）
+            # --- 身体・環境条件による係数補正 ---
             multiplier = 1.0
             
-            # 例：重労働職種なのに「重いものは不可」を選んでいる場合
-            if job.get('physical_level') == 'heavy' and user_scores.get('physical_lifting') == '重いものは不可':
-                multiplier *= 0.4 # 適合率を強制的に40%まで下げる
+            # 1. 身体負担の判定
+            physical_lifting = user_scores.get('physical_lifting', '')
+            if job.get('physical_level') == 'heavy' and '重いものは不可' in str(physical_lifting):
+                multiplier *= 0.3 # 重労働NGなら30%まで低下
             
-            # 例：屋外職種なのに「屋外」を避ける環境に入れている場合
-            if job.get('environment') == 'outdoor' and '屋外（暑さ・寒さ）' in user_scores.get('avoid_env', []):
-                multiplier *= 0.5
+            # 2. 環境不適合の判定（避けるべき環境のリストをチェック）
+            avoid_env = user_scores.get('avoid_env', [])
+            job_env = job.get('environment', '')
             
-            # 最終スコアの算出（0-100の間に収める）
-            final_rate = max(0, min(100, match_rate * multiplier))
+            if isinstance(avoid_env, list) and job_env in avoid_env:
+                multiplier *= 0.5 # 嫌な環境なら50%低下
             
-            # 小数点第一位まで計算（例: 87.4%）
+            # 最終スコア算出
+            final_rate = max(0, min(100.0, match_rate * multiplier))
+            
+            # 小数点第一位まで表示
             matches.append({
                 'job': job,
                 'match_rate': round(final_rate, 1)
             })
         
-        # マッチ率が高い順に並び替え
+        # 高い順にソート
         return sorted(matches, key=lambda x: x['match_rate'], reverse=True)
