@@ -1,18 +1,8 @@
-import os
 import json
-from openai import OpenAI
-import streamlit as st
 
 class TextAnalyzer:
     def __init__(self):
-        # APIキーを環境変数またはStreamlit Secretsから取得
-        api_key = os.getenv('OPENAI_API_KEY') or st.secrets.get("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OpenAI API key not found")
-        
-        # proxiesを指定せず、新しい形式で初期化
-        self.client = OpenAI(api_key=api_key)
-        
+        # 15項目のスキル定義
         self.skills = [
             "読解力", "文書作成力", "計算力", "時間管理能力",
             "容儀", "運動能力", "モビリティ", "身体的耐性",
@@ -21,43 +11,52 @@ class TextAnalyzer:
         ]
     
     def analyze(self, text_responses):
-        prompt = f"""
-以下のテキスト回答から、15項目のスキルを0.0〜2.0で評価してください。
-必ずJSON形式で、スキル名をキー、数値を値として出力してください。
-
-評価基準:
-- 0.0-0.5: 限定的 (Limited)
-- 0.6-1.4: 良好 (Good)
-- 1.5-2.0: 高い (High)
-
-15項目:
-{', '.join(self.skills)}
-
-テキスト回答:
-{json.dumps(text_responses, ensure_ascii=False)}
-"""
-        try:
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "あなたは障害者雇用の専門家です。必ず有効なJSON形式で回答してください。"},
-                    {"role": "user", "content": prompt}
-                ],
-                response_format={ "type": "json_object" }, # 強制的にJSONにする
-                temperature=0.3
-            )
+        """
+        APIを使わず、回答の文字数やキーワードから簡易的にスコアを算出する
+        """
+        # 全項目を基本点（1.0）で初期化
+        result = {skill: 1.0 for skill in self.skills}
+        
+        # 1. 読解・理解力の評価
+        res_reading = text_responses.get('reading', '')
+        if len(res_reading) > 30:
+            result["読解力"] = 1.8
+            result["集中力"] = 1.5
+        elif len(res_reading) > 10:
+            result["読解力"] = 1.3
+        
+        # 2. 文章作成力の評価
+        res_writing = text_responses.get('writing', '')
+        if len(res_writing) > 50:
+            result["文書作成力"] = 1.9
+            result["個人業務遂行力"] = 1.7
+        elif len(res_writing) > 20:
+            result["文書作成力"] = 1.4
             
-            content = response.choices[0].message.content
-            scores = json.loads(content)
+        # 3. 計算・論理力の評価（数字や計算記号が含まれているか）
+        res_calc = text_responses.get('calculation', '')
+        if any(char.isdigit() for char in res_calc):
+            result["計算力"] = 1.8
+            result["問題解決力"] = 1.5
+            if "円" in res_calc or "=" in res_calc:
+                result["計算力"] = 2.0
+        
+        # 4. コミュニケーションの評価（ポジティブなキーワードがあるか）
+        res_comm = text_responses.get('communication', '')
+        keywords = ["相談", "話す", "報告", "連絡", "お願いします", "協力"]
+        count = sum(1 for k in keywords if k in res_comm)
+        
+        if count >= 2:
+            result["コミュニケーション力"] = 1.9
+            result["協力・チーム力"] = 1.8
+            result["サービスパフォーマンス"] = 1.6
+        elif count == 1:
+            result["コミュニケーション力"] = 1.4
+            result["協力・チーム力"] = 1.3
             
-            result = {}
-            for skill in self.skills:
-                # 文字列で返ってきた場合も考慮してfloatに変換
-                val = scores.get(skill, 1.0)
-                result[skill] = float(val)
+        # 共通：身だしなみや運動能力などは、回答がしっかりしていれば標準点以上にする
+        if all(len(r) > 10 for r in text_responses.values()):
+            result["容儀"] = 1.5
+            result["柔軟性"] = 1.4
             
-            return result
-            
-        except Exception as e:
-            st.error(f"AI分析でエラーが発生しました: {e}")
-            return {skill: 1.0 for skill in self.skills}
+        return result
