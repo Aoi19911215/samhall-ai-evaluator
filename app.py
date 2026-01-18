@@ -143,8 +143,9 @@ if st.button("🚀 AI評価を開始", type="primary"):
                 
                 final_scores = SamhallScorer.calculate_final_scores(text_scores)
                 
-                with open('data/job_database.json', 'r', encoding='utf-8') as f:
-                    job_db = json.load(f)
+            
+with open('utils/job_database.json', 'r', encoding='utf-8') as f:
+    job_db = json.load(f)
                 
                 job_matches = SamhallScorer.match_jobs(final_scores, job_db)
                 
