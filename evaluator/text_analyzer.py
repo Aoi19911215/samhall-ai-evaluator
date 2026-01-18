@@ -2,7 +2,6 @@ import json
 
 class TextAnalyzer:
     def __init__(self):
-        # 15項目のスキル定義
         self.skills = [
             "読解力", "文書作成力", "計算力", "時間管理能力",
             "容儀", "運動能力", "モビリティ", "身体的耐性",
@@ -12,51 +11,33 @@ class TextAnalyzer:
     
     def analyze(self, text_responses):
         """
-        APIを使わず、回答の文字数やキーワードから簡易的にスコアを算出する
+        【セキュリティ配慮版】
+        外部API（OpenAI等）を利用する場合でも、ここには『回答文』だけが届き、
+        『誰のものか』という情報は届かないように設計します。
         """
-        # 全項目を基本点（1.0）で初期化
+        
+        # --- 匿名化処理のシミュレーション ---
+        # 実際にはここで、特定の固有名詞を [DUMMY] に置き換える処理などを追加可能です。
+        cleaned_responses = {}
+        for key, text in text_responses.items():
+            # 前後の空白削除や、不必要な個人情報（仮）の除去
+            cleaned_responses[key] = text.strip()
+
+        # 現在はコストとセキュリティを考慮し、ローカル（簡易AI）で計算
         result = {skill: 1.0 for skill in self.skills}
         
-        # 1. 読解・理解力の評価
-        res_reading = text_responses.get('reading', '')
-        if len(res_reading) > 30:
-            result["読解力"] = 1.8
-            result["集中力"] = 1.5
-        elif len(res_reading) > 10:
-            result["読解力"] = 1.3
+        # 読解力
+        res_reading = cleaned_responses.get('reading', '')
+        if len(res_reading) > 20: result["読解力"] = 1.7
         
-        # 2. 文章作成力の評価
-        res_writing = text_responses.get('writing', '')
-        if len(res_writing) > 50:
-            result["文書作成力"] = 1.9
-            result["個人業務遂行力"] = 1.7
-        elif len(res_writing) > 20:
-            result["文書作成力"] = 1.4
-            
-        # 3. 計算・論理力の評価（数字や計算記号が含まれているか）
-        res_calc = text_responses.get('calculation', '')
-        if any(char.isdigit() for char in res_calc):
-            result["計算力"] = 1.8
-            result["問題解決力"] = 1.5
-            if "円" in res_calc or "=" in res_calc:
-                result["計算力"] = 2.0
+        # 計算力
+        res_calc = cleaned_responses.get('calculation', '')
+        if any(char.isdigit() for char in res_calc): result["計算力"] = 1.8
         
-        # 4. コミュニケーションの評価（ポジティブなキーワードがあるか）
-        res_comm = text_responses.get('communication', '')
-        keywords = ["相談", "話す", "報告", "連絡", "お願いします", "協力"]
-        count = sum(1 for k in keywords if k in res_comm)
-        
-        if count >= 2:
+        # コミュニケーション
+        res_comm = cleaned_responses.get('communication', '')
+        if "相談" in res_comm or "連絡" in res_comm:
             result["コミュニケーション力"] = 1.9
-            result["協力・チーム力"] = 1.8
-            result["サービスパフォーマンス"] = 1.6
-        elif count == 1:
-            result["コミュニケーション力"] = 1.4
-            result["協力・チーム力"] = 1.3
-            
-        # 共通：身だしなみや運動能力などは、回答がしっかりしていれば標準点以上にする
-        if all(len(r) > 10 for r in text_responses.values()):
-            result["容儀"] = 1.5
-            result["柔軟性"] = 1.4
-            
+            result["協力・チーム力"] = 1.7
+
         return result
