@@ -23,15 +23,26 @@ def create_radar_chart(scores):
     return fig
 
 def create_job_match_chart(job_matches):
+    if not job_matches:
+        return go.Figure().update_layout(title="マッチするデータがありません")
+    
     chart_data = []
     for m in job_matches:
-        chart_data.append({
-            'job_name': m['job']['name'],
-            'match_rate': m['match_rate']
-        })
+        # jobが辞書であることを確認してからデータを作成
+        if isinstance(m, dict) and 'job' in m:
+            chart_data.append({
+                'job_name': m['job'].get('name', '不明な職種'),
+                'match_rate': m.get('match_rate', 0)
+            })
+    
     df = pd.DataFrame(chart_data)
     
-    # マッチ率が高い順にグラデーションをつけ、数値をバーの横に表示
+    if df.empty:
+        return go.Figure().update_layout(title="表示できるデータがありません")
+
+    # マッチ率でソート（念のため）
+    df = df.sort_values('match_rate', ascending=True)
+
     fig = px.bar(
         df, 
         x='match_rate', 
@@ -40,16 +51,17 @@ def create_job_match_chart(job_matches):
         title="🎯 あなたにマッチする職種 Top 10",
         color='match_rate',
         color_continuous_scale='Blues',
-        text='match_rate', # 数値を表示
+        text='match_rate',
     )
     
-    fig.update_traces(texttemplate='%{text}%', textposition='outside')
+    # パーセント表示を小数点第一位まで強制
+    fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
     fig.update_layout(
-        yaxis={'categoryorder':'total ascending'},
-        xaxis_range=[0, 115], # 数値が見切れないよう調整
+        xaxis_range=[0, 115],
         showlegend=False,
         coloraxis_showscale=False,
-        height=500
+        height=500,
+        margin=dict(l=20, r=20, t=50, b=20)
     )
     return fig
 
