@@ -45,30 +45,68 @@ with tab4:
 # ==========================================
 # 5. 評価ボタンと実行
 # ==========================================
-st.divider()
-
 if st.button("🚀 AI評価を開始", type="primary"):
     if not st.session_state.get('name'):
         st.error("左側のサイドバーで「氏名」を入力してください")
     else:
         with st.spinner("AI分析中..."):
             try:
-                # 分析とマッチングの実行
+                # 1. AI分析の実行
                 analyzer = TextAnalyzer()
                 text_scores = analyzer.analyze(text_responses)
+                
+                # 2. スコア計算
                 final_scores = SamhallScorer.calculate_final_scores(text_scores)
                 
+                # 3. ジョブデータベースの読み込み
                 with open('data/job_database.json', 'r', encoding='utf-8') as f:
                     job_db = json.load(f)
                 
+                # 4. マッチング実行
                 job_matches = SamhallScorer.match_jobs(final_scores, job_db)
                 
                 # 結果を保存
                 st.session_state['scores'] = final_scores
                 st.session_state['job_matches'] = job_matches
                 st.session_state['evaluated'] = True
+                
+                # 画面をリロード
                 st.rerun()
 
-           except Exception as e:
-                # {e} の後の引用符 " と閉じ括弧 ) が抜けている可能性があります
+            except Exception as e:
+                # ここがエラーの箇所です。tryと同じラインに揃えました。
                 st.error(f"エラーが発生しました: {e}")
+
+# ==========================================
+# 6. 結果表示・AIコメント
+# ==========================================
+if st.session_state.get('evaluated'):
+    st.success(f"✨ {st.session_state['name']} さんの分析が完了しました！")
+    
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        st.plotly_chart(create_radar_chart(st.session_state['scores']), use_container_width=True)
+    with col2:
+        st.plotly_chart(create_job_match_chart(st.session_state['job_matches'][:10]), use_container_width=True)
+
+    st.divider()
+    st.subheader("🤖 AIキャリア・フィードバック")
+    
+    # 強みの抽出とアドバイス表示
+    scores = st.session_state['scores']
+    job_matches = st.session_state['job_matches']
+    strengths = [skill for skill, val in scores.items() if val >= 1.5]
+    
+    with st.container():
+        st.markdown(f"### 🌟 {st.session_state['name']} さんの「強み」と「可能性」")
+        if strengths:
+            cols = st.columns(len(strengths) if len(strengths) < 4 else 4)
+            for i, s in enumerate(strengths[:4]):
+                cols[i].info(f"**{s}**")
+        
+        st.markdown(f"""
+        **【AI分析コメント】**
+        診断結果から、あなたは非常に丁寧な業務遂行能力をお持ちであることが分かりました。
+        特にマッチ率が高かった**「{job_matches[0]['job']['name']}」**などは、あなたの強みを最大限に活かせる職種です。
+        自信を持って取り組んでみてください。
+        """)
