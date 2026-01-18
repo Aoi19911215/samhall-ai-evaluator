@@ -91,5 +91,7 @@ with st.sidebar:
 env_list = [item for item in env_preference if item != "その他"]
 if other_env_text: env_list.append(other_env_text)
 
+# ここが切れていた箇所です。正しく書き直します。
 text_responses["user_profile"] = f"【基本】{age}歳/{gender} 【障害】:{disability_type}"
-text_responses["environment_info"] = f
+text_responses["environment_info"] = f"【避けるべき環境】:{', '.join(env_list) if env_list else '特になし'}"
+text_responses["physical_info"] = f"【身体】移動:{physical_mobility} / 重量物:{physical_lifting}"
