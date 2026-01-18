@@ -69,5 +69,6 @@ if st.button("🚀 AI評価を開始", type="primary"):
                 st.session_state['evaluated'] = True
                 st.rerun()
 
-            except Exception as e:
-                st.error(f"エラーが発生しました: {
+           except Exception as e:
+                # {e} の後の引用符 " と閉じ括弧 ) が抜けている可能性があります
+                st.error(f"エラーが発生しました: {e}")
