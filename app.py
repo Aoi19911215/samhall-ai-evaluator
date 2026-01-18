@@ -32,7 +32,51 @@ def create_job_match_chart(job_matches):
                  labels={'match_rate': 'マッチング率 (%)', 'job_name': '職種'})
     fig.update_layout(yaxis={'categoryorder':'total ascending'})
     return fig
-from utils.database import save_evaluation, load_evaluations
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+import json
+import os
+
+# ==========================================
+# 1. グラフ作成機能 (旧 utils/visualizer.py)
+# ==========================================
+def create_radar_chart(scores):
+    categories = list(scores.keys())
+    values = list(scores.values())
+    fig = go.Figure()
+    fig.add_trace(go.Scatterpolar(r=values, theta=categories, fill='toself'))
+    fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 2])), showlegend=False)
+    return fig
+
+def create_job_match_chart(job_matches):
+    df = pd.DataFrame(job_matches)
+    fig = px.bar(df, x='match_rate', y='job_name', orientation='h', title="職種マッチング率")
+    return fig
+
+# ==========================================
+# 2. 保存機能 (旧 utils/database.py)
+# ==========================================
+def save_evaluation(data, filepath="data/evaluations.json"):
+    if not os.path.exists("data"): os.makedirs("data")
+    try:
+        history = []
+        if os.path.exists(filepath):
+            with open(filepath, "r", encoding="utf-8") as f: history = json.load(f)
+        history.append(data)
+        with open(filepath, "w", encoding="utf-8") as f: json.dump(history, f, ensure_ascii=False, indent=4)
+        return True
+    except: return False
+
+def load_evaluations(filepath="data/evaluations.json"):
+    if os.path.exists(filepath):
+        with open(filepath, "r", encoding="utf-8") as f: return json.load(f)
+    return []
+
+# ==========================================
+# 3. ここから下に、元の app.py の st.title などが続きます
+# ==========================================
 
 st.set_page_config(page_title="Samhall AI評価システム", layout="wide")
 
