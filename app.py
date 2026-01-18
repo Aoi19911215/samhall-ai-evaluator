@@ -51,6 +51,7 @@ def create_job_match_chart(job_matches):
         text='match_rate',
     )
     
+    # 小数点第一位まで表示するように強制
     fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
     fig.update_layout(
         xaxis_range=[0, 115],
@@ -100,5 +101,6 @@ with st.sidebar:
 env_list = [item for item in env_preference if item != "その他"]
 if other_env_text: env_list.append(other_env_text)
 
+# --- ここがエラーになっていた箇所の修正です ---
 text_responses["user_profile"] = f"【基本】{age}歳/{gender} 【障害】:{disability_type}"
-text_responses["environment_info"] = f"【避けるべき環境】:{', '.join(env_list) if env_list
+text_responses["environment_info"] = f"【避けるべき環境】:{', '.join(env_
