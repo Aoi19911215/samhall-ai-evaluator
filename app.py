@@ -116,16 +116,25 @@ if st.button("🚀 AI評価を開始", type="primary"):
         st.error("氏名を入力してください")
     else:
         with st.spinner("AI分析中..."):
+            # 1. AI分析の実行
             analyzer = TextAnalyzer()
-            scores = analyzer.analyze(text_responses)
+            text_scores = analyzer.analyze(text_responses)
             
-            scorer = SamhallScorer()
-            job_matches = scorer.calculate_matches(scores)
+            # 2. スコア計算とマッチング
+            # （クラスメソッドとして直接呼び出す形式に合わせます）
+            final_scores = SamhallScorer.calculate_final_scores(text_scores)
             
-            st.session_state['scores'] = scores
+            # 3. ジョブデータベースの読み込み
+            with open('data/job_database.json', 'r', encoding='utf-8') as f:
+                job_db = json.load(f)
+            
+            # 4. マッチング実行
+            job_matches = SamhallScorer.match_jobs(final_scores, job_db)
+            
+            # セッション状態に保存
+            st.session_state['scores'] = final_scores
             st.session_state['job_matches'] = job_matches
             st.session_state['evaluated'] = True
-
 if st.session_state.get('evaluated'):
     st.success("分析完了！")
     st.plotly_chart(create_radar_chart(st.session_state['scores']))
