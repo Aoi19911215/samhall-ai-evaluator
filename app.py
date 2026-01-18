@@ -8,7 +8,7 @@ from evaluator.text_analyzer import TextAnalyzer
 from evaluator.scorer import SamhallScorer
 
 # ==========================================
-# 1. グラフ作成・保存機能（中身はそのまま）
+# 1. グラフ作成・保存機能
 # ==========================================
 def create_radar_chart(scores):
     categories = list(scores.keys())
@@ -19,18 +19,25 @@ def create_radar_chart(scores):
     return fig
 
 def create_job_match_chart(job_matches):
-    df = pd.DataFrame(job_matches)
+    # match_jobsが返す「job辞書」を含んだリストをグラフ用データフレームに変換
+    chart_data = []
+    for m in job_matches:
+        chart_data.append({
+            'job_name': m['job']['name'],  # ネストされた名前を抽出
+            'match_rate': m['match_rate']
+        })
+    
+    df = pd.DataFrame(chart_data)
     fig = px.bar(df, x='match_rate', y='job_name', orientation='h', title="職種マッチング率")
     fig.update_layout(yaxis={'categoryorder':'total ascending'})
     return fig
 
 # ==========================================
-# 2. 初期設定・辞書の準備（★重要：最初に作る）
+# 2. 初期設定・辞書の準備
 # ==========================================
 st.set_page_config(page_title="O-lys AI評価システム", layout="wide")
 st.title("🎯 O-lys AI評価システム（24職種対応）")
 
-# ここで先に辞書を初期化します。これで以下のどこで使ってもエラーになりません。
 text_responses = {}
 
 # ==========================================
@@ -65,7 +72,6 @@ with st.sidebar:
     if "その他" in env_preference:
         other_env_text = st.text_input("具体的な配慮事項を入力してください")
 
-# --- データの整理（サイドバー情報を辞書へ格納） ---
 env_list = [item for item in env_preference if item != "その他"]
 if other_env_text:
     env_list.append(other_env_text)
@@ -116,26 +122,9 @@ if st.button("🚀 AI評価を開始", type="primary"):
         st.error("氏名を入力してください")
     else:
         with st.spinner("AI分析中..."):
-            # 1. AI分析の実行
             analyzer = TextAnalyzer()
             text_scores = analyzer.analyze(text_responses)
             
-            # 2. スコア計算とマッチング
-            # （クラスメソッドとして直接呼び出す形式に合わせます）
             final_scores = SamhallScorer.calculate_final_scores(text_scores)
             
-            # 3. ジョブデータベースの読み込み
             with open('data/job_database.json', 'r', encoding='utf-8') as f:
-                job_db = json.load(f)
-            
-            # 4. マッチング実行
-            job_matches = SamhallScorer.match_jobs(final_scores, job_db)
-            
-            # セッション状態に保存
-            st.session_state['scores'] = final_scores
-            st.session_state['job_matches'] = job_matches
-            st.session_state['evaluated'] = True
-if st.session_state.get('evaluated'):
-    st.success("分析完了！")
-    st.plotly_chart(create_radar_chart(st.session_state['scores']))
-    st.plotly_chart(create_job_match_chart(st.session_state['job_matches'][:10]))
