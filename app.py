@@ -86,7 +86,7 @@ for key in ['name', 'r_t_val', 'w_t_val', 'c_t_val', 'm_t_val']:
 if 'evaluated' not in st.session_state: st.session_state['evaluated'] = False
 
 # ==========================================
-# 4. サイドバー（基本情報・配慮事項）
+# 4. サイドバー
 # ==========================================
 with st.sidebar:
     st.header("📝 プロフィール")
@@ -105,31 +105,31 @@ with st.sidebar:
 # 5. ワーク回答セクション（ガイド機能）
 # ==========================================
 st.header("✍️ テキスト課題")
-st.info("💡 一言の回答でもAIがあなたの強みを分析します。詳しく書くと精度がさらに上がります！")
+st.info("💡 一言の回答でもAIが分析します。具体的に書くほど精度がさらに上がります！")
 
 tabs = st.tabs(["📖 読解", "✏️ 文章", "🔢 計算", "💬 相談"])
 
 with tabs[0]:
-    st.write("**【課題】** 働くことは、お金以外に「社会とのつながり」や「能力の発揮」の意味があります。")
+    st.write("**【課題】** 働くことは、お金以外に「社会とのつながり」などの意味があります。")
     with st.expander("🔍 ヒントを表示"):
-        st.write("文章の中から「お金以外」のキーワードを抜き出して書いてみましょう。")
+        st.write("文章の中にあるキーワードを抜き出して書いてみましょう。")
     st.session_state['r_t_val'] = st.text_area("お金以外の意味は？", placeholder="（例）社会とつながること。", value=st.session_state['r_t_val'], key="r_t")
 
 with tabs[1]:
     with st.expander("🔍 ヒントを表示"):
-        st.write("「散歩をした」「花を見た」など、日常の小さなことでOKです。")
+        st.write("「散歩をした」「美味しいものを食べた」など何でもOKです。")
     st.session_state['w_t_val'] = st.text_area("最近の「良いこと」は？", placeholder="（例）天気が良くて気持ちよかったです。", value=st.session_state['w_t_val'], key="w_t")
 
 with tabs[2]:
     st.write("**【課題】** 時給1,200円×6時間×20日間の給与は？")
     with st.expander("🔍 ヒントを表示"):
-        st.write("計算式（1200×6×...）も書くと「論理力」が高く評価されます。")
+        st.write("計算式も書くと「論理力」が高く評価されます。")
     st.session_state['c_t_val'] = st.text_area("答えと計算式", placeholder="（例）1200×6×20=144000", value=st.session_state['c_t_val'], key="c_t_new")
 
 with tabs[3]:
     st.write("**【課題】** 道具を壊してしまった時、戻ってきた上司になんと伝えますか？")
     with st.expander("🔍 ヒントを表示"):
-        st.write("「すみません」などの実際のセリフを書くのがポイントです。")
+        st.write("実際に話しかけるような「具体的なセリフ」を書いてください。")
     st.session_state['m_t_val'] = st.text_area("具体的なセリフ", placeholder="（例）すみません、道具を壊しました。どうすればいいですか？", value=st.session_state['m_t_val'], key="m_t")
 
 # ==========================================
@@ -142,7 +142,6 @@ if st.button("🚀 AI評価を開始（お守りシート作成）", type="prima
     else:
         with st.spinner("AIが才能を掘り起こしています..."):
             try:
-                # データの集約
                 inputs = {
                     "reading": st.session_state['r_t_val'], 
                     "writing": st.session_state['w_t_val'],
@@ -151,10 +150,8 @@ if st.button("🚀 AI評価を開始（お守りシート作成）", type="prima
                     "physical_info": f"{phys_mob}/{phys_lift}",
                     "environment_info": ",".join(env_pref)
                 }
-                
                 analyzer = TextAnalyzer()
                 raw_scores = analyzer.analyze(inputs)
-                
                 final_scores = SamhallScorer.calculate_final_scores(raw_scores)
                 
                 with open('data/job_database.json', 'r', encoding='utf-8') as f:
@@ -171,11 +168,11 @@ if st.button("🚀 AI評価を開始（お守りシート作成）", type="prima
 # ==========================================
 if st.session_state.get('evaluated'):
     title, top_3 = get_feedback_content(st.session_state['scores'])
-    job_matches = st.session_state['job_matches']
+    job_matches = st.session_state.get('job_matches', [])
     
     st.balloons()
     st.markdown(f"""
-    <div style="background-color:#fff5f5; padding:20px; border-radius:15px; border:3px solid #ff4b4b; text-align:center; margin-bottom:20px;">
+    <div style="background-color:#fff5f5; padding:20px; border-radius:15px; border:2px solid #ff4b4b; text-align:center; margin-bottom:20px;">
         <h2 style="color:#ff4b4b; margin:0;">🎊 {st.session_state['name']} さんの分析結果 🎊</h2>
         <h1 style="font-size:2.8em; margin:10px 0;">{title}</h1>
     </div>
@@ -183,4 +180,26 @@ if st.session_state.get('evaluated'):
 
     col1, col2 = st.columns(2)
     with col1:
-        st.plotly_chart(create_
+        st.plotly_chart(create_radar_chart(st.session_state['scores']), use_container_width=True)
+    with col2:
+        st.plotly_chart(create_job_match_chart(job_matches), use_container_width=True)
+
+    st.divider()
+    st.subheader("🤖 AIキャリア・フィードバック")
+    cols = st.columns(3)
+    for i, s in enumerate(top_3):
+        cols[i].info(f"**強み: {s}**")
+        
+    if job_matches:
+        best_job = job_matches[0]
+        st.markdown(f"""
+        **【AI分析コメント】**
+        {st.session_state['name']}さんの回答から、誠実な人柄が伝わりました。
+        最もマッチした**「{best_job['job']['name']}」**（マッチ率 {best_job['match_rate']}%）は、
+        あなたの今のスキルをそのまま活かせるお仕事です。
+
+        **【今後のヒント】**
+        さらに詳しく書く（理由や計算式を添える）と、AIがもっと多くの「できること」を見つけられるようになります。
+        """)
+
+    st.button("📄 診断結果をお守りシートとして保存する（準備中）")
