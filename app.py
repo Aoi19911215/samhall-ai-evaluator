@@ -58,7 +58,29 @@ with st.expander("🛡️ はじめる前に（プライバシーとデータの
 for key in ['name', 'r_t_val', 'w_t_val', 'c_t_val', 'm_t_val']:
     if key not in st.session_state: st.session_state[key] = ""
 if 'evaluated' not in st.session_state: st.session_state['evaluated'] = False
+# ==========================================
+# URLパラメータから値を復元 / 保存する関数
+# ==========================================
+def sync_url_params():
+    # URLから既存の値を取得
+    params = st.query_params
+    
+    # セッション状態にURLの値を反映（初回アクセス時など）
+    for key in ['name', 'r_t_val', 'w_t_val', 'c_t_val', 'm_t_val']:
+        if key in params and not st.session_state.get(key):
+            st.session_state[key] = params[key]
 
+    # 入力があるたびにURLパラメータを更新
+    st.query_params.update({
+        "name": st.session_state.get('name', ""),
+        "r_t_val": st.session_state.get('r_t_val', ""),
+        "w_t_val": st.session_state.get('w_t_val', ""),
+        "c_t_val": st.session_state.get('c_t_val', ""),
+        "m_t_val": st.session_state.get('m_t_val', "")
+    })
+
+# app.py の冒頭（st.set_page_configの直後）で呼び出す
+sync_url_params()
 # ==========================================
 # 3. 入力セクション（サイドバー・課題）
 # ==========================================
