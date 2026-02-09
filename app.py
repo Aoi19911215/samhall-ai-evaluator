@@ -29,7 +29,7 @@ def get_strength_feedback(scores):
     top_key = sorted_s[0][0]
     titles = {
         "calculation": "正確な仕事で信頼を築く実務の星",
-        "communication": "周囲と協力して進める相談의達人",
+        "communication": "周囲と協力して進める相談の達人",
         "writing": "相手の気持ちに寄り添う表現者",
         "reading": "大切な情報を的確に捉える理解のリーダー"
     }
@@ -88,19 +88,28 @@ tab1, tab2, tab3, tab4 = st.tabs(["📖 読み取る力", "✏️ 人との関�
 with tab1:
     st.write("**【メッセージ】**\n「働くことは、お金を得るだけでなく、社会とつながったり、自分の力を発揮する場でもあります。」")
     st.session_state['r_t_val'] = st.text_area("Q. あなたにとって、働くことの「お金」以外の意味は何だと思いますか？", value=st.session_state['r_t_val'], key="r_t_final")
+
 with tab2:
-    st.write("**【エピソード】**\nこれまでの生活の中で、誰かと関わって「良かったな」と感じたことを教えてください。")
+    st.write("**【エピソード】**\nこれまでの生活の中で、誰かと関わって「良かったな」「助かったな」と感じたことを教えてください。")
     st.session_state['w_t_val'] = st.text_area("Q. どんな場面で、相手とどう関わり、どう感じましたか？", value=st.session_state['w_t_val'], key="w_t_final")
+
 with tab3:
-    # --- ご指定の暗算しやすい問題 ---
-    st.write("**【計算】**\n時給1,000円で、1日5時間、月に20日間働きました。合計の給料はいくらになりますか？")
-    st.session_state['c_t_val'] = st.text_area("Q. 計算式と答えを書いてください。", value=st.session_state['c_t_val'], key="c_t_final", placeholder="（例）1000 × 5 × 20 ＝ 100,000")
+    st.write("**【計算】**")
+    st.info("💡 問題：時給1,000円で、1日5時間、月に20日間働きました。合計の給料はいくらになりますか？")
+    # --- 修正箇所：ヒントから答え（100,000）を削除しました ---
+    st.session_state['c_t_val'] = st.text_area(
+        "Q. 計算式と答えを書いてください。", 
+        value=st.session_state['c_t_val'], 
+        key="c_t_final", 
+        placeholder="（書き方の例）時給 × 時間 × 日数 ＝ 合計金額"
+    )
+
 with tab4:
     st.write("**【場面】**\n作業中に道具を壊してしまいました。しばらくして、上司があなたのところへ戻ってきました。")
     st.session_state['m_t_val'] = st.text_area("Q. 戻ってきた上司へ、最初に何と言いますか？", value=st.session_state['m_t_val'], key="m_t_final")
 
 # ==========================================
-# 6. UI：未来のゴール・資格（ワークの後に配置、番号なし）
+# 6. UI：未来のゴール・資格
 # ==========================================
 st.divider()
 st.header("🌈 あなたの未来について")
@@ -121,6 +130,7 @@ if st.button("🚀 AI診断を開始（あなたの強みを発見する）", ty
         st.error("「氏名」を入力してください。")
     else:
         with st.spinner("分析中..."):
+            # デモ用スコア生成
             st.session_state['scores'] = {"reading": 1.2, "writing": 1.0, "calculation": 1.5, "communication": 1.3}
             db_path = 'data/job_database.json'
             if os.path.exists(db_path):
