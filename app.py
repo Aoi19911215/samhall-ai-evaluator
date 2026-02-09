@@ -43,12 +43,22 @@ for key in keys:
         st.session_state[key] = False if key == 'evaluated' else ({} if key in ['scores', 'job_matches'] else "")
 
 # ==========================================
-# 3. UI：プロフィール（サイドバー）
+# 3. 画面UI：はじめにお読みください
 # ==========================================
 st.title("🎯 O-lys AI評価システム")
-st.markdown("### ✨ あなたの「できる」を見つける診断")
-st.info("🔒 **個人情報の保護**: 入力内容は保存されず、ページを閉じると消去されます。")
 
+st.error("⚠️ **はじめにお読みください**\n\nあくまで簡易的な診断のため、今回の結果のみで決断・行動にうつさないようにお気を付けください。このページでは「あなたが障害者枠でどんな仕事が向いているか」をアドバイスします。")
+
+st.markdown("""
+### ✨ あなたの「強み」を引き出す診断
+このシステムは、あなたの中に眠っている素敵な力をAIが見つけ、活かせる場所を一緒に考えるためのものです。
+""")
+
+st.info("🔒 **個人情報の保護**: 入力された内容は保存されず、ページを閉じると消去されます。AIの学習にも利用されません。")
+
+# ==========================================
+# 4. サイドバー：プロフィール・障害特性
+# ==========================================
 with st.sidebar:
     st.header("👤 プロフィール")
     st.session_state['name'] = st.text_input("氏名", value=st.session_state['name'])
@@ -61,14 +71,14 @@ with st.sidebar:
     st.session_state['dis_detail'] = st.text_area("Q2. どんな障害かをおしえてください", value=st.session_state['dis_detail'], placeholder="例：ASD、ADHD、障害者1級など")
 
 # ==========================================
-# 4. UI：追加情報とワーク
+# 5. UI：追加情報とワーク
 # ==========================================
 st.header("📝 あなたについて教えてください")
 col_q3, col_q4 = st.columns(2)
 with col_q3:
-    st.session_state['qualifications'] = st.text_input("Q3. 仕事に役立ちそうな資格（運転免許など）", value=st.session_state['qualifications'])
+    st.session_state['qualifications'] = st.text_input("Q3. 仕事に役立ちそうな資格があれば教えてください", value=st.session_state['qualifications'], placeholder="例：運転免許、英検、簿記など")
 with col_q4:
-    st.session_state['life_goal'] = st.text_input("Q4. あなたの人生の最終的なゴール（幸せな家庭など）", value=st.session_state['life_goal'])
+    st.session_state['life_goal'] = st.text_input("Q4. あなたの人生の最終的なゴールを教えてください", value=st.session_state['life_goal'], placeholder="例：幸せな家庭、安定した生活など")
 
 st.divider()
 st.header("✍️ ワーク・シミュレーション")
@@ -88,14 +98,15 @@ with tab4:
     st.session_state['m_t_val'] = st.text_area("Q. 実際に話す「言葉（セリフ）」を具体的に書いてください。", value=st.session_state['m_t_val'], key="m_t")
 
 # ==========================================
-# 5. 分析実行・表示
+# 6. 分析実行・結果表示
 # ==========================================
+st.divider()
 if st.button("🚀 AI診断を開始（あなたの強みを発見する）", type="primary"):
     if not st.session_state['name']:
         st.error("「氏名」を入力してください。")
     else:
-        with st.spinner("分析中..."):
-            # デモ用スコア（本来は分析エンジンへ）
+        with st.spinner("あなたの「強み」を分析中..."):
+            # デモ用スコア生成（本来は分析エンジンへ）
             st.session_state['scores'] = {"reading": 1.2, "writing": 1.1, "calculation": 1.5, "communication": 1.3}
             st.session_state['evaluated'] = True
 
@@ -105,8 +116,9 @@ if st.session_state['evaluated']:
     
     st.markdown(f"""
     <div style="background-color:#FFF9E6; padding:30px; border-radius:15px; border:3px solid #FFD700; text-align:center;">
-        <h2>AIが見つけた {st.session_state['name']} さんの可能性</h2>
-        <h1 style="font-size:3em;">✨ {title} ✨</h1>
+        <h2 style="color:#B8860B; margin:0;">AIが見つけた {st.session_state['name']} さんの可能性</h2>
+        <h1 style="font-size:3em; margin:15px 0; color:#333;">✨ {title} ✨</h1>
+        <p style="font-size:1.1em; color:#666;">今回の結果は簡易的なアドバイスです。次の一歩のヒントにしてください。</p>
     </div>""", unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
@@ -117,6 +129,11 @@ if st.session_state['evaluated']:
     with col2:
         st.write("#### 💡 引き出された強み")
         st.info(f"**1. {top_3[0]}**\n現場で最も頼りにされるあなたの核となる力です。")
-        st.info(f"**2. {top_3[1]}**\n周囲との関係を円滑にする素晴らしい力です。")
+        st.info(f"**2. {top_3[1]}**\n周囲との円滑な関係を支える素晴らしい力です。")
 
-    st.success(f"**未来へのアドバイス：**\nゴールである「{st.session_state['life_goal']}」に向かって、資格「{st.session_state['qualifications']}」や強みを活かせる職場を一緒に探しましょう。")
+    st.divider()
+    st.success(f"""
+    **🌈 未来へのエール：**
+    あなたが目指す「{st.session_state['life_goal']}」という素敵な目標。
+    すでにお持ちの「{st.session_state['qualifications']}」という強みと、今回見つかった「{top_3[0]}」を組み合わせれば、あなたらしく働ける場所がきっと見つかります。
+    """)
