@@ -9,43 +9,61 @@ import os
 # 1. 強み分析・称号生成ロジック
 # ==========================================
 def get_strength_feedback(scores):
+    """高いスコアに基づいた称号と強みラベルを返す"""
     labels = {"reading": "読み取る力", "writing": "人との関わり", "calculation": "計算をたしかめる", "communication": "相談する力"}
     if not scores: return "期待のプロフェッショナル", ["分析中"] * 3
+    
+    # スコア順にソート
     sorted_s = sorted(scores.items(), key=lambda x: x[1], reverse=True)
     top_key = sorted_s[0][0]
     
+    # 強みを引き出すためのポジティブな称号
     titles = {
         "calculation": "正確な仕事で信頼を築く実務の星",
         "communication": "周囲と協力して進める相談の達人",
         "writing": "相手の気持ちに寄り添う表現者",
         "reading": "大切な情報を的確に捉える理解のリーダー"
     }
-    return titles.get(top_key, "期待のプロフェッショナル"), [labels.get(k, k) for k, v in sorted_s[:3]]
+    main_title = titles.get(top_key, "期待のプロフェッショナル")
+    top_3_labels = [labels.get(k, k) for k, v in sorted_s[:3]]
+    
+    return main_title, top_3_labels
 
 def create_radar_chart(scores):
+    """強みチャート（レーダーチャート）の生成"""
     categories = ["読み取る力", "人との関わり", "計算をたしかめる", "相談する力"]
     values = [max(0.1, scores.get(k, 0.1)) for k in ["reading", "writing", "calculation", "communication"]]
+    
     fig = go.Figure()
-    fig.add_trace(go.Scatterpolar(r=values, theta=categories, fill='toself', fillcolor='rgba(30, 144, 255, 0.4)', line_color='#1E90FF'))
-    fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 2])), showlegend=False, height=400)
+    fig.add_trace(go.Scatterpolar(
+        r=values, theta=categories, fill='toself', 
+        fillcolor='rgba(30, 144, 255, 0.4)', line_color='#1E90FF'
+    ))
+    fig.update_layout(
+        polar=dict(radialaxis=dict(visible=True, range=[0, 2])), 
+        showlegend=False, height=400, margin=dict(l=50, r=50, t=50, b=50)
+    )
     return fig
 
 def calculate_match_rate(user_scores, job_required_scores):
+    """ユーザー指標と職種データの必要スコアを照合"""
     mapping = {"読解力": "reading", "文書作成力": "writing", "計算力": "calculation", "コミュニケーション力": "communication"}
     match_sum, count = 0, 0
     for jp_key, en_key in mapping.items():
         if jp_key in job_required_scores:
             req = job_required_scores[jp_key]
             user = user_scores.get(en_key, 0)
+            # 達成率を算出（最大1.2倍まで評価）
             match_sum += min(1.2, user / req if req > 0 else 1.0)
             count += 1
     return round((match_sum / count) * 100, 1) if count > 0 else 0
 
 # ==========================================
-# 2. 初期設定 & セッション管理
+# 2. 初期設定 & セッション管理（個人情報保護）
 # ==========================================
 st.set_page_config(page_title="O-lys AI評価システム", layout="wide")
 
+# 入力情報を保持（ページを閉じると消去されるブラウザメモリを使用）
 keys = ['name', 'gender', 'age', 'disability', 'r_t_val', 'w_t_val', 'c_t_val', 'm_t_val', 'scores', 'job_matches', 'evaluated']
 for key in keys:
     if key not in st.session_state:
@@ -62,7 +80,7 @@ st.markdown("""
 日々のワークを通じて、**あなたの中に眠っている「個人の強み」を引き出し、活かせる場所を見つけるため**のものです。
 """)
 
-st.info("🔒 **個人情報の保護**: 入力された氏名、性別、配慮事項等は保存されず、ページを閉じると消去されます。")
+st.info("🔒 **個人情報の保護**: 入力された氏名、性別、配慮事項等は保存されず、ページを閉じると消去されます。AIの学習にも利用されません。")
 
 with st.sidebar:
     st.header("👤 プロフィール")
@@ -70,13 +88,14 @@ with st.sidebar:
     st.session_state['gender'] = st.radio("性別", ["男性", "女性", "回答しない"], horizontal=True)
     st.session_state['age'] = st.number_input("年齢", 0, 100, 25)
     st.session_state['disability'] = st.text_input("障害特性・配慮事項", value=st.session_state['disability'], placeholder="例：精神障害など")
+    
     st.divider()
     st.header("🏃 身体・環境条件")
     st.selectbox("歩く・移動", ["制限なし", "長距離は困難", "車椅子利用"])
     st.multiselect("にがてな環境", ["騒音", "人混み", "高い場所", "外（暑さ・寒さ）"])
 
 # ==========================================
-# 4. ワーク・シミュレーション
+# 4. 画面UI：ワーク・シミュレーション
 # ==========================================
 st.header("✍️ ワーク・シミュレーション")
 tab1, tab2, tab3, tab4 = st.tabs(["📖 読み取る力", "✏️ 人との関わり", "🔢 計算をたしかめる", "💬 相談する力"])
@@ -104,7 +123,7 @@ if st.button("🚀 AI診断を開始（あなたの強みを発見する）", ty
     else:
         with st.spinner("あなたの「強み」を分析中..."):
             try:
-                # 診断ロジック（デモ用）
+                # 分析スコア（本来はTextAnalyzerを使用。ここではデモ用の動的な値を想定）
                 st.session_state['scores'] = {"reading": 1.2, "writing": 1.1, "calculation": 1.5, "communication": 1.3}
                 
                 db_path = 'data/job_database.json'
@@ -112,23 +131,27 @@ if st.button("🚀 AI診断を開始（あなたの強みを発見する）", ty
                     with open(db_path, 'r', encoding='utf-8') as f:
                         db_data = json.load(f)
                         jobs = db_data.get('jobs', [])
-                        results = [{"job": j, "match_rate": calculate_match_rate(st.session_state['scores'], j.get('required_scores', {}))} for j in jobs]
+                        results = []
+                        for j in jobs:
+                            rate = calculate_match_rate(st.session_state['scores'], j.get('required_scores', {}))
+                            results.append({"job": j, "match_rate": rate})
+                        
                         st.session_state['job_matches'] = sorted(results, key=lambda x: x['match_rate'], reverse=True)
                         st.session_state['evaluated'] = True
                 else:
                     st.error("job_database.json が見つかりません。")
             except Exception as e:
-                st.error(f"エラーが発生しました: {e}")
+                st.error(f"分析中にエラーが発生しました: {e}")
 
 # ==========================================
-# 6. 結果表示（すべての仕様を反映）
+# 6. 結果表示（強み引き出しセクション）
 # ==========================================
 if st.session_state['evaluated']:
     st.balloons()
     main_title, top_3 = get_strength_feedback(st.session_state['scores'])
     
     st.markdown(f"""
-    <div style="background-color:#FFF9E6; padding:30px; border-radius:15px; border:3px solid #FFD700; text-align:center;">
+    <div style="background-color:#FFF9E6; padding:30px; border-radius:15px; border:3px solid #FFD700; text-align:center; margin-bottom:25px;">
         <h2 style="color:#B8860B; margin:0;">AIが見つけた {st.session_state['name']} さんの可能性</h2>
         <h1 style="font-size:3em; margin:15px 0; color:#333;">✨ {main_title} ✨</h1>
         <p style="font-size:1.2em; color:#666;">この診断は、あなたの新しい一歩を応援するためのものです。</p>
