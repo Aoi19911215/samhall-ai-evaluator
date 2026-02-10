@@ -1,5 +1,4 @@
 streamlit
-openai>=1.0.0
 pandas
 plotly
-httpx
+st-gsheets-connection
